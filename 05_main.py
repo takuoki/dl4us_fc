@@ -28,22 +28,16 @@ ja_vocab_size = len(tokenizer_ja.word_index) + 1
 
 # 各Modelを取得
 generator_model = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
-print('generator_model')
-generator_model.summary()
 plot_model(generator_model, to_file=final_dir+'generator_model.png')
 
 discriminator_model = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
-print('discriminator_model')
-discriminator_model.summary()
 plot_model(discriminator_model, to_file=final_dir+'discriminator_model.png')
 
 gan_model = combined_models(generator_model, discriminator_model, en_seq_len, ja_seq_len)
-print('gan_model')
-gan_model.summary()
 plot_model(gan_model, to_file=final_dir+'gan_model.png')
 
 # train
-train(generator_model, discriminator_model, gan_model, ja_seq_len, x_train, y_train)
+train(generator_model, discriminator_model, gan_model, ja_seq_len, ja_vocab_size, x_train, y_train, step=10, batch_size=32)
 
 # TODO: 学習結果(history)をplot
 

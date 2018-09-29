@@ -1,5 +1,7 @@
 # 09_util
 
+import numpy as np
+
 # detoken
 def detoken(detokenizer, seqs):
     results = []
@@ -11,6 +13,11 @@ def detoken(detokenizer, seqs):
             detokened_seq.append(detokenizer[i])
         results.append(' '.join(detokened_seq))
     return results
+
+# onehot
+#   (n, seq_len) -> (n, seq_len, vocab_size)
+def onehot(seqs, vocab_size):
+    return np.identity(vocab_size)[seqs]
 
 # TODO: 精度検証(BLUE?)
 
