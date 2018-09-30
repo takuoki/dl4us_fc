@@ -7,7 +7,7 @@ from keras.layers.advanced_activations import LeakyReLU
 from keras.optimizers import Adam
 
 # discriminator
-#   model : (en_seq_len, ja_seq_len) -> (2) : True/False
+#   model : (en_seq_len, (ja_seq_len, ja_vocab_size)) -> (2) : True/False
 def discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size, emb_dim=256, hid_dim=256, opt=Adam(lr=1e-4)):
 
     encoder_inputs, _, encoder_states = encoder(en_seq_len, en_vocab_size, emb_dim, hid_dim)
@@ -31,7 +31,7 @@ def switch_trainable(model, status):
         l.trainable = status
 
 # combined_models
-#   model : (en_seq_len, ja_seq_len) -> (2) : True/False
+#   model : (en_seq_len, ja_seq_len, en_seq_len) -> (2) : True/False
 def combined_models(generator_model, discriminator_model, en_seq_len, ja_seq_len, opt=Adam(lr=1e-3)):
 
     input_layer1 = Input(shape=[en_seq_len])
