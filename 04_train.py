@@ -24,10 +24,11 @@ def train_discriminator(generator_model, discriminator_model, ja_seq_len, ja_voc
     # batch_size x ja_seq_len数だけ、偽物の日本語文を生成
     ja_generated = np.array([np.zeros(ja_seq_len)])
     for i in range(batch_size):
-        ja_input_seq = np.array([initial_seq(ja_seq_len)])
+        ja_output_seq = np.array([np.zeros(ja_seq_len)])
         for _ in range(ja_seq_len):
-            ja_input_seq = predict(generator_model, en_train[i:i+1], ja_input_seq)
-            ja_generated = np.append(ja_generated, ja_input_seq, axis=0)
+            ja_input_seq = initialize_seq(ja_output_seq)
+            ja_output_seq = predict(generator_model, en_train[i:i+1], ja_input_seq)
+            ja_generated = np.append(ja_generated, ja_output_seq, axis=0)
     ja_generated = np.array(ja_generated[1:], dtype='int32')
 
     # 本物/偽物データを結合

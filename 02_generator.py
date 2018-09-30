@@ -71,19 +71,25 @@ def predict(generator_model, en_input_seqs, ja_input_seqs):
 
     return results[1:]
 
-# initial_seq
-def initial_seq(ja_seq_len):
+# initialize_seq
+def initialize_seq(ja_seqs):
 
-    # 1文字目bos、他はpadding
-    return np.append(np.array([1]), np.zeros(ja_seq_len-1))
+    results = np.array([np.zeros(ja_seqs.shape[1])])
+    for i in range(ja_seqs.shape[0]):
+        # 1文字目bos、以降はひとつスライド
+        results = np.append(results, np.array([np.append(np.array([1]), ja_seqs[i][:-1])]), axis=0)
+
+    return results[1:]
 
 # predict_all
-def predict_all(generator_model, en_input_seq, ja_seq_len):
+def predict_all(generator_model, en_input_seqs, ja_seq_len):
 
-    ja_input_seq = initial_seq(ja_seq_len)
-
+    ja_output_seq = np.array([np.zeros(ja_seq_len)])
+    ja_output_seqs = ja_output_seq
+    for _ in range(en_input_seqs.shape[0]):
+        ja_output_seqs = np.append(ja_output_seqs, ja_output_seq, axis=0)
     for _ in range(ja_seq_len):
-        output_seq = predict(generator_model, en_input_seq, ja_input_seq)
-        ja_input_seq = [0] + output_seq[:-1]
+        ja_input_seqs = initialize_seq(ja_output_seqs)
+        ja_output_seqs = predict(generator_model, en_input_seqs, ja_input_seqs)
 
-    return output_seq
+    return ja_output_seqs
