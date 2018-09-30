@@ -59,7 +59,7 @@ def train_generator(discriminator_model, gan_model, ja_seq_len, x_train, batch_s
     en_train_xn = en_train
     for _ in range(ja_seq_len-1):
         en_train_xn = np.append(en_train_xn, en_train, axis=0)
-    en_train_xn = np.array(en_train_xn[:], dtype='float32')
+    # en_train_xn = np.array(en_train_xn[:], dtype='float32')
 
     # batch_size x ja_seq_len数だけ、日本語文初期値データを生成
     ja_generated = np.array([np.zeros(ja_seq_len)])
@@ -80,7 +80,8 @@ def train_generator(discriminator_model, gan_model, ja_seq_len, x_train, batch_s
     print('en_train_xn:', en_train_xn[:1], en_train_xn.shape)
     print('ja_generated:', ja_generated[:1], ja_generated.shape)
     print('y:', y[:1], y.shape)
-    gan_model.train_on_batch([en_train_xn, ja_generated, en_train_xn], y)
+    for i in range(int(batch_size*ja_seq_len/2)):
+        gan_model.train_on_batch([en_train_xn[i:i+2], ja_generated[i:i+2], en_train_xn[i:i+2]], y[i:i+2])
 
     # TODO: 学習後の損失関数の値を返す
 

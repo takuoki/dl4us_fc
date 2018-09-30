@@ -27,13 +27,13 @@ en_vocab_size = len(tokenizer_en.word_index) + 1
 ja_vocab_size = len(tokenizer_ja.word_index) + 1
 
 # 各Modelを取得
-generator_model = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
+generator_model, in1, in2 = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
 plot_model(generator_model, to_file=final_dir+'generator_model.png')
 
-discriminator_model = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
+discriminator_model, in3 = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
 plot_model(discriminator_model, to_file=final_dir+'discriminator_model.png')
 
-gan_model = combined_models(generator_model, discriminator_model, en_seq_len, ja_seq_len)
+gan_model = combined_models(generator_model, discriminator_model, in1, in2, in3, en_seq_len, ja_seq_len)
 plot_model(gan_model, to_file=final_dir+'gan_model.png')
 
 # train
@@ -43,9 +43,14 @@ train(generator_model, discriminator_model, gan_model, ja_seq_len, ja_vocab_size
 
 # validデータの翻訳 & 保存
 test_count = 5
+
+en_seqs = detoken(detokenizer_en, x_valid[:test_count])
+ja_pred_seqs = detoken(detokenizer_ja, predict_all(generator_model, x_valid[:test_count], ja_seq_len))
+ja_seqs = detoken(detokenizer_ja, y_valid[:test_count])
+
 for i in range(test_count):
-    print('EN(', i, '): ', x_valid[i])
-    print('JA-predict(', i, '): ', predict_all(generator_model, x_valid[i], ja_seq_len))
-    print('JA-answer (', i, '): ', y_valid[i])
+    print('EN(', i, '): ', en_seqs[i])
+    print('JA-predict(', i, '): ', ja_pred_seqs[i])
+    print('JA-answer (', i, '): ', ja_seqs[i])
 
 # TODO: 精度検証

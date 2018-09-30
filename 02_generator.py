@@ -55,7 +55,7 @@ def generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size, emb_dim=256,
 
     model = Model([encoder_inputs, decoder_inputs], dense_layer(decoder_outputs))
 
-    return model
+    return model, encoder_inputs, decoder_inputs
 
 # predict
 def predict(generator_model, en_input_seqs, ja_input_seqs):

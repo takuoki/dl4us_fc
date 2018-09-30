@@ -22,7 +22,7 @@ def discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size, emb_dim=
     model = Model([encoder_inputs, decoder_inputs], model_output)
     model.compile(loss='categorical_crossentropy', optimizer=opt)
 
-    return model
+    return model, encoder_inputs
 
 # switch_trainable
 def switch_trainable(model, status):
@@ -32,15 +32,15 @@ def switch_trainable(model, status):
 
 # combined_models
 #   model : (en_seq_len, ja_seq_len, en_seq_len) -> (2) : True/False
-def combined_models(generator_model, discriminator_model, en_seq_len, ja_seq_len, opt=Adam(lr=1e-3)):
+def combined_models(generator_model, discriminator_model, in1, in2, in3, en_seq_len, ja_seq_len, opt=Adam(lr=1e-3)):
 
-    input_layer1 = Input(shape=[en_seq_len])
-    input_layer2 = Input(shape=[ja_seq_len])
-    input_layer3 = Input(shape=[en_seq_len])
-    x = generator_model([input_layer1, input_layer2])
-    outputs = discriminator_model([input_layer3, x])
+    # input_layer1 = Input(shape=(en_seq_len,))
+    # input_layer2 = Input(shape=(ja_seq_len,))
+    # input_layer3 = Input(shape=(en_seq_len,))
+    x = generator_model([in1, in2])
+    outputs = discriminator_model([in3, x])
 
-    model = Model([input_layer1, input_layer2, input_layer3], outputs)
+    model = Model([in1, in2, in3], outputs)
     model.compile(loss='categorical_crossentropy', optimizer=opt)
 
     return model
