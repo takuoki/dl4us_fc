@@ -5,7 +5,7 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
 # train_discriminator
-def train_discriminator(generator_model, discriminator_model, ja_seq_len, ja_vocab_size, x_train, y_train, batch_size=128):
+def train_discriminator(ja_seq_len, ja_vocab_size, x_train, y_train, batch_size=128):
 
     switch_trainable(discriminator_model, True)
 
@@ -17,10 +17,15 @@ def train_discriminator(generator_model, discriminator_model, ja_seq_len, ja_voc
     en_train_xn = en_train
     for _ in range(ja_seq_len-1):
         en_train_xn = np.append(en_train_xn, en_train, axis=0)
-    ja_train_xn = ja_train
-    for i in range(ja_seq_len-1):
-        # TODO: i+1以降をpaddingに変換する & bosを削除（discriminatorのInはbosなしのはず）
-        ja_train_xn = np.append(ja_train_xn, ja_train, axis=0)
+    ja_train_xn = np.array([np.zeros(ja_seq_len)])
+    for i in range(ja_seq_len):
+        for j in range(ja_train.shape[0]): # batch_size loop
+            # BOSを削除
+            ja_seq_rm_bos = np.append(ja_train[j][1:], np.zeros(1))
+            # i+1以降をpaddingに変換
+            ja_seq_pad = np.append(ja_seq_rm_bos[0:i+1], np.zeros(ja_seq_len-i-1))
+            ja_train_xn = np.append(ja_train_xn, np.array([ja_seq_pad]), axis=0)
+    ja_train_xn = np.array(ja_train_xn[1:], dtype='int32')
 
     # batch_size x ja_seq_len数だけ、偽物の日本語文を生成
     ja_generated = np.array([np.zeros(ja_seq_len)])
@@ -41,13 +46,14 @@ def train_discriminator(generator_model, discriminator_model, ja_seq_len, ja_voc
     y[batch_size*ja_seq_len:, 0] = 1
 
     # discriminatorの学習
+    history = []
     for i in range(batch_size*ja_seq_len):
-        discriminator_model.train_on_batch([en_input[i:i+2], ja_input_onehot[i:i+2]], y[i:i+2])
+        history.append(discriminator_model.train_on_batch([en_input[i:i+2], ja_input_onehot[i:i+2]], y[i:i+2]))
 
-    # TODO: 学習後の損失関数の値を返す
+    return history
 
 # train generator
-def train_generator(discriminator_model, gan_model, ja_seq_len, x_train, batch_size=128):
+def train_generator(ja_seq_len, x_train, batch_size=128):
 
     switch_trainable(discriminator_model, False)
 
@@ -59,7 +65,6 @@ def train_generator(discriminator_model, gan_model, ja_seq_len, x_train, batch_s
     en_train_xn = en_train
     for _ in range(ja_seq_len-1):
         en_train_xn = np.append(en_train_xn, en_train, axis=0)
-    # en_train_xn = np.array(en_train_xn[:], dtype='float32')
 
     # batch_size x ja_seq_len数だけ、日本語文初期値データを生成
     ja_generated = np.array([np.zeros(ja_seq_len)])
@@ -77,22 +82,36 @@ def train_generator(discriminator_model, gan_model, ja_seq_len, x_train, batch_s
     y = np.array(y[:], dtype='int32')
 
     # ganを学習
-    print('en_train_xn:', en_train_xn[:1], en_train_xn.shape)
-    print('ja_generated:', ja_generated[:1], ja_generated.shape)
-    print('y:', y[:1], y.shape)
+    history = []
     for i in range(int(batch_size*ja_seq_len/2)):
-        gan_model.train_on_batch([en_train_xn[i:i+2], ja_generated[i:i+2], en_train_xn[i:i+2]], y[i:i+2])
+        history.append(gan_model.train_on_batch([en_train_xn[i:i+2], ja_generated[i:i+2], en_train_xn[i:i+2]], y[i:i+2]))
 
-    # TODO: 学習後の損失関数の値を返す
+    return history
 
 # train
-def train(generator_model, discriminator_model, gan_model, ja_seq_len, ja_vocab_size, x_train, y_train, step=1000, batch_size=128):
+def train(
+    ja_seq_len,
+    ja_vocab_size,
+    x_train,
+    y_train,
+    x_valid,
+    y_valid,
+    detokenizer_en,
+    detokenizer_ja,
+    step=1000,
+    batch_size=128):
 
-    # TODO: 学習時の損失関数の値を格納する箱を用意
+    disc_history = []
+    gan_history = []
 
     # loop (=epoch)
-    for _ in tqdm(range(step)):
-        train_discriminator(generator_model, discriminator_model, ja_seq_len, ja_vocab_size, x_train, y_train, batch_size)
-        train_generator(discriminator_model, gan_model, ja_seq_len, x_train, batch_size)
+    for i in tqdm(range(step)):
+        disc_history.extend(train_discriminator(ja_seq_len, ja_vocab_size, x_train, y_train, batch_size))
+        gan_history.extend(train_generator(ja_seq_len, x_train, batch_size))
 
-        # TODO: 途中結果の保存（generator/discriminatorの重み、学習結果(history)）と、サンプル出力(500回ごととか)
+        # 途中結果の確認
+        if i % 10 == 9:
+            translate(detokenizer_en, detokenizer_ja, x_valid, y_valid, ja_seq_len, test_count=2)
+            # TODO: 途中結果の保存（generator/discriminatorの重み、学習結果(history)）
+
+    return {'disc_history': disc_history, 'gan_history': gan_history}

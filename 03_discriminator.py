@@ -32,11 +32,8 @@ def switch_trainable(model, status):
 
 # combined_models
 #   model : (en_seq_len, ja_seq_len, en_seq_len) -> (2) : True/False
-def combined_models(generator_model, discriminator_model, in1, in2, in3, en_seq_len, ja_seq_len, opt=Adam(lr=1e-3)):
+def combined_models(in1, in2, in3, en_seq_len, ja_seq_len, opt=Adam(lr=1e-3)):
 
-    # input_layer1 = Input(shape=(en_seq_len,))
-    # input_layer2 = Input(shape=(ja_seq_len,))
-    # input_layer3 = Input(shape=(en_seq_len,))
     x = generator_model([in1, in2])
     outputs = discriminator_model([in3, x])
 
