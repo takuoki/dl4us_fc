@@ -33,7 +33,7 @@ def decoder(encoder_states, seq_len, vocab_size, emb_dim=256, hid_dim=256, oneho
         embededding_layer = MyEmbedding(vocab_size, emb_dim)
     else:
         input_layer = Input(shape=(seq_len,))
-        embededding_layer = Embedding(vocab_size, emb_dim)
+        embededding_layer = Embedding(vocab_size, emb_dim, mask_zero=True)
     lstm_layer = LSTM(hid_dim, return_sequences=True, return_state=True)
 
     # connect layer
@@ -58,7 +58,7 @@ def generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size, emb_dim=256,
     return model, encoder_inputs, decoder_inputs
 
 # predict
-def predict(generator_model, en_input_seqs, ja_input_seqs):
+def predict(en_input_seqs, ja_input_seqs):
 
     outputs = generator_model.predict([en_input_seqs, ja_input_seqs])
 
@@ -82,14 +82,14 @@ def initialize_seq(ja_seqs):
     return results[1:]
 
 # predict_all
-def predict_all(generator_model, en_input_seqs, ja_seq_len):
+def predict_all(en_input_seqs, ja_seq_len):
 
     ja_output_seq = np.array([np.zeros(ja_seq_len)])
     ja_output_seqs = ja_output_seq
-    for _ in range(en_input_seqs.shape[0]):
+    for _ in range(en_input_seqs.shape[0]-1):
         ja_output_seqs = np.append(ja_output_seqs, ja_output_seq, axis=0)
     for _ in range(ja_seq_len):
         ja_input_seqs = initialize_seq(ja_output_seqs)
-        ja_output_seqs = predict(generator_model, en_input_seqs, ja_input_seqs)
+        ja_output_seqs = predict(en_input_seqs, ja_input_seqs)
 
     return ja_output_seqs

@@ -4,6 +4,34 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
+def train_only_generator(ja_seq_len, x_train, y_train, epochs=100, batch_size=128):
+
+    # 英語文をja_seq_len数に増幅（en_train[k] == en_train[k+ja_seq_len*i]）
+    en_train = x_train
+    for _ in range(ja_seq_len-1):
+        en_train = np.append(en_train, x_train, axis=0)
+
+    # 日本語文をja_seq_len数に増幅（ja_train[k] == ja_train[k+ja_seq_len*i]）
+    # ※オリジナルデータは同じだが、(i+1)文字目以降はpaddingに変換されている
+    ja_train = np.array([np.zeros(ja_seq_len)])
+    for i in range(ja_seq_len):
+        for j in range(y_train.shape[0]): # batch_size loop
+            # i+1以降をpaddingに変換
+            ja_seq_pad = np.append(y_train[j][0:i+1], np.zeros(ja_seq_len-i-1))
+            ja_train = np.append(ja_train, np.array([ja_seq_pad]), axis=0)
+    ja_train = np.array(ja_train[1:], dtype='int32')
+
+    # 1文字前にスライドしたデータがターゲット
+    ja_target = np.hstack((ja_train[:, 1:], np.zeros((len(ja_train), 1), dtype=np.int32)))
+
+    hist = generator_model.fit(
+        [en_train, ja_train], 
+        np.expand_dims(ja_target, -1), 
+        batch_size=batch_size, 
+        epochs=epochs)
+
+    return hist
+
 # train_discriminator
 def train_discriminator(ja_seq_len, ja_vocab_size, x_train, y_train, batch_size=128):
 

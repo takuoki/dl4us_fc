@@ -29,26 +29,28 @@ en_vocab_size = len(tokenizer_en.word_index) + 1
 ja_vocab_size = len(tokenizer_ja.word_index) + 1
 
 # 各Modelを取得
-generator_model, in1, in2 = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
+generator_model, _, _ = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
 plot_model(generator_model, to_file=final_dir+'generator_model.png')
 
-discriminator_model, in3 = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
-plot_model(discriminator_model, to_file=final_dir+'discriminator_model.png')
+generator_model.compile(optimizer='rmsprop', loss='sparse_categorical_crossentropy')
 
-gan_model = combined_models(in1, in2, in3, en_seq_len, ja_seq_len)
-plot_model(gan_model, to_file=final_dir+'gan_model.png')
+# discriminator_model, in3 = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
+# plot_model(discriminator_model, to_file=final_dir+'discriminator_model.png')
+
+# gan_model = combined_models(in1, in2, in3, en_seq_len, ja_seq_len)
+# plot_model(gan_model, to_file=final_dir+'gan_model.png')
 
 # train
-history = train(
-    ja_seq_len, ja_vocab_size, x_train, y_train,
-    x_valid, y_valid, detokenizer_en, detokenizer_ja,
-    step=100, batch_size=4)
+history = train_only_generator(ja_seq_len, x_train, y_train, epochs=50, batch_size=32)
+# history = train(
+#     ja_seq_len, ja_vocab_size, x_train, y_train,
+#     x_valid, y_valid, detokenizer_en, detokenizer_ja,
+#     step=100, batch_size=4)
 
 # historyをplot
 plt.title('loss')
-plt.plot(history['disc_history'])
-plt.plot(history['gan_history'])
-plt.legend(['discriminator', 'gan'])
+plt.plot(history.history['loss'])
+plt.legend(['generator loss'])
 plt.show
 
 # validデータの翻訳 & 保存
