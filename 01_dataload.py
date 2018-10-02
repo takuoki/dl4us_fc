@@ -61,5 +61,3 @@ def show_data(valid_size=500):
         print('y_train(' + str(text_no) + '): ', y_train_text[1:-1])
 
 show_data(500)
-
-# TODO: サンプルの系列長を揃える（出力する日本語の最大長も定義しておく）

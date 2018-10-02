@@ -31,10 +31,13 @@ def switch_trainable(model, status):
         l.trainable = status
 
 # combined_models
-#   model : (en_seq_len, ja_seq_len, en_seq_len) -> (2) : True/False
+#   model : (en_seq_len, (ja_seq_len, ja_vocab_size), en_seq_len) -> (2) : True/False
 def combined_models(in1, in2, in3, en_seq_len, ja_seq_len, opt=Adam(lr=1e-3)):
 
     x = generator_model([in1, in2])
+    for _ in range(ja_seq_len-1):
+        x = generator_model([in1, x])
+        # TODO: ひとつスライドする層を用意しないと。。
     outputs = discriminator_model([in3, x])
 
     model = Model([in1, in2, in3], outputs)

@@ -15,9 +15,9 @@ def detoken(detokenizer, seqs):
     return results
 
 # translate
-def translate(detokenizer_en, detokenizer_ja, x_valid, y_valid, ja_seq_len, test_count=5):
+def translate(detokenizer_en, detokenizer_ja, x_valid, y_valid, ja_seq_len, ja_vocab_size, test_count=5):
     en_seqs = detoken(detokenizer_en, x_valid[:test_count])
-    ja_pred_seqs = detoken(detokenizer_ja, predict_all(x_valid[:test_count], ja_seq_len))
+    ja_pred_seqs = detoken(detokenizer_ja, predict_all(x_valid[:test_count], ja_seq_len, ja_vocab_size))
     ja_seqs = detoken(detokenizer_ja, y_valid[:test_count])
 
     for i in range(test_count):
