@@ -36,8 +36,8 @@ def combined_models(in1, in2, in3, en_seq_len, ja_seq_len, opt=Adam(lr=1e-3)):
 
     x = generator_model([in1, in2])
     for _ in range(ja_seq_len-1):
-        x = generator_model([in1, x])
         # TODO: ひとつスライドする層を用意しないと。。
+        x = generator_model([in1, x])
     outputs = discriminator_model([in3, x])
 
     model = Model([in1, in2, in3], outputs)

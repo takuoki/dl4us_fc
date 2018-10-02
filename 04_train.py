@@ -143,7 +143,7 @@ def train(
 
         # 途中結果の確認
         if i % 10 == 9:
-            translate(detokenizer_en, detokenizer_ja, x_valid, y_valid, ja_seq_len, test_count=2)
+            translate(detokenizer_en, detokenizer_ja, x_valid, y_valid, ja_seq_len, ja_vocab_size, test_count=2)
             # TODO: 途中結果の保存（generator/discriminatorの重み、学習結果(history)）
 
     return {'disc_history': disc_history, 'gan_history': gan_history}
