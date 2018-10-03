@@ -43,14 +43,15 @@ plot_model(gan_model, to_file=final_dir+'gan_model.png')
 # train
 # history = train_only_generator(ja_seq_len, x_train, y_train, epochs=50, batch_size=32)
 history = train(
-    ja_seq_len, ja_vocab_size, x_train, y_train,
+    ja_seq_len, x_train, y_train,
     x_valid, y_valid, detokenizer_en, detokenizer_ja,
     step=50, batch_size=128)
 
 # historyをplot
 plt.title('loss')
-plt.plot(history.history['loss'])
-plt.legend(['generator loss'])
+plt.plot(history['disc_history'])
+plt.plot(history['gan_history'])
+plt.legend(['discriminator', 'gan'])
 plt.show
 
 # validデータの翻訳 & 保存

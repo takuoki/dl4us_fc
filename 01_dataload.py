@@ -5,7 +5,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from keras.preprocessing.sequence import pad_sequences
 
-def load_data(root_dir, valid_size=500):
+def load_data(root_dir, valid_size=1000):
     # load data
     data_dir = root_dir + 'data/'
     x_train = np.load(data_dir + 'x_train.npy')
@@ -60,4 +60,4 @@ def show_data(valid_size=500):
         print('x_train(' + str(text_no) + '): ', x_train_text[1:-1])
         print('y_train(' + str(text_no) + '): ', y_train_text[1:-1])
 
-show_data(500)
+show_data(1000)
