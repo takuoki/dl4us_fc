@@ -30,15 +30,17 @@ ja_vocab_size = len(tokenizer_ja.word_index) + 1
 
 # 各Modelを取得
 generator_model, in1, in2 = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
-plot_model(generator_model, to_file=final_dir+'generator_model.png')
+# plot_model(generator_model, to_file=final_dir+'generator_model.png')
 
-# generator_model.compile(optimizer='rmsprop', loss='sparse_categorical_crossentropy')
+generator_model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+
+combined_generator_model = combined_generator(in1, in2, ja_seq_len)
 
 discriminator_model, in3 = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
-plot_model(discriminator_model, to_file=final_dir+'discriminator_model.png')
+# plot_model(discriminator_model, to_file=final_dir+'discriminator_model.png')
 
-gan_model = combined_models(in1, in2, in3, en_seq_len, ja_seq_len)
-plot_model(gan_model, to_file=final_dir+'gan_model.png')
+gan_model = combined_models(in1, in2, in3, ja_seq_len)
+# plot_model(gan_model, to_file=final_dir+'gan_model.png')
 
 # train
 # history = train_only_generator(ja_seq_len, x_train, y_train, epochs=50, batch_size=32)

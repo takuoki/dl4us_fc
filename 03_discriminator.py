@@ -31,9 +31,27 @@ def switch_trainable(model, status):
     for l in model.layers:
         l.trainable = status
 
+# combined_generator
+#   model : (en_seq_len, (ja_seq_len, ja_vocab_size)) -> (ja_seq_len, ja_vocab_size)
+def combined_generator(in1, in2, ja_seq_len):
+
+    # shift layer
+    # '私', 'は', '早起き', '' -> '<s>', '私', 'は', '早起き'
+    shift_layer = Lambda(shift_func)
+
+    x = generator_model([in1, in2])
+    for _ in range(ja_seq_len-1):
+        x = shift_layer(x)
+        x = generator_model([in1, x])
+
+    model = Model([in1, in2], x)
+    model.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+
+    return model
+
 # combined_models
 #   model : (en_seq_len, (ja_seq_len, ja_vocab_size), en_seq_len) -> (2) : True/False
-def combined_models(in1, in2, in3, en_seq_len, ja_seq_len, opt=Adam(lr=1e-3)):
+def combined_models(in1, in2, in3, ja_seq_len, opt=Adam(lr=1e-3)):
 
     # shift layer
     # '私', 'は', '早起き', '' -> '<s>', '私', 'は', '早起き'
