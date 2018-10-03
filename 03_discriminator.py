@@ -37,11 +37,11 @@ def combined_models(in1, in2, in3, en_seq_len, ja_seq_len, opt=Adam(lr=1e-3)):
 
     # shift layer
     # '私', 'は', '早起き', '' -> '<s>', '私', 'は', '早起き'
-    # shift_layer = Lambda(lambda x: K.concatenate((x[:, :1]*0+1, x[:, :-1])))
+    shift_layer = Lambda(shift_func)
 
     x = generator_model([in1, in2])
     for _ in range(ja_seq_len-1):
-        # x = shift_layer(x)
+        x = shift_layer(x)
         x = generator_model([in1, x])
     outputs = discriminator_model([in3, x])
 
@@ -49,3 +49,9 @@ def combined_models(in1, in2, in3, en_seq_len, ja_seq_len, opt=Adam(lr=1e-3)):
     model.compile(loss='categorical_crossentropy', optimizer=opt)
 
     return model
+
+def shift_func(x):
+    tmp = K.argmax(x, axis=2)
+    tmp = tmp[:, :1]*0+1
+    tmp = K.one_hot(tmp, ja_vocab_size)
+    return K.concatenate([tmp, x[:, :-1]], axis=1)

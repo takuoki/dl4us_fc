@@ -21,7 +21,7 @@ from sklearn.model_selection import train_test_split
 #     return hist
 
 # train_discriminator
-def train_discriminator(ja_seq_len, x_train, y_train, batch_size=128):
+def train_discriminator(ja_seq_len, ja_vocab_size, x_train, y_train, batch_size=128):
 
     switch_trainable(discriminator_model, True)
 
@@ -30,20 +30,25 @@ def train_discriminator(ja_seq_len, x_train, y_train, batch_size=128):
     en_train, _, ja_train, _ = train_test_split(x_train, y_train, test_size=test_size)
 
     # 英語文を元に日本語文を生成
-    ja_generated = predict_all(en_train, ja_seq_len)
+    ja_generated = predict_all(en_train, ja_seq_len, ja_vocab_size)
 
     # 本物/偽物データを結合
     en_input = np.concatenate((en_train, en_train))
-    ja_input = np.array(np.concatenate((ja_train, ja_generated)), dtype=np.int32)
+    ja_input = initialize_seq(np.array(np.concatenate((ja_train, ja_generated)), dtype=np.int32))
+    ja_input_onehot = onehot(ja_input, ja_vocab_size)
     y = np.zeros([2*batch_size, 2], dtype=np.int32)
     y[:batch_size, 1] = 1
     y[batch_size:, 0] = 1
 
     # discriminatorの学習
-    return discriminator_model.train_on_batch([en_input, ja_input], y)
+    history = []
+    for i in range(batch_size):
+        history.append(discriminator_model.train_on_batch([en_input[i:i+2], ja_input_onehot[i:i+2]], y[i:i+2]))
+
+    return history
 
 # train generator
-def train_generator(ja_seq_len, x_train, batch_size=128):
+def train_generator(ja_seq_len, ja_vocab_size, x_train, batch_size=128):
 
     switch_trainable(discriminator_model, False)
 
@@ -52,18 +57,25 @@ def train_generator(ja_seq_len, x_train, batch_size=128):
     en_train, _, _, _ = train_test_split(x_train, x_train, test_size=test_size)
 
     # batch_size数だけ、日本語文初期値データを生成
-    ja_initial_seqs = initialize_seq(np.zeros((batch_size, ja_seq_len), dtype=np.int32))
+    ja_initial_seqs = np.zeros((batch_size, ja_seq_len), dtype=np.int32)
+    ja_initial_seqs[:, 0] = 1
+    ja_initial_seqs_onehot = onehot(ja_initial_seqs, ja_vocab_size)
 
     # 正解ラベルを用意
     y = np.zeros([batch_size, 2], dtype=np.int32)
     y[:, 1] = 1
 
     # ganを学習
-    return gan_model.train_on_batch([en_train, ja_initial_seqs, en_train], y)
+    history = []
+    for i in range(int(batch_size/2)):
+        history.append(gan_model.train_on_batch([en_train[i:i+2], ja_initial_seqs_onehot[i:i+2], en_train[i:i+2]], y[i:i+2]))
+
+    return history
 
 # train
 def train(
     ja_seq_len,
+    ja_vocab_size,
     x_train,
     y_train,
     x_valid,
@@ -78,12 +90,12 @@ def train(
 
     # loop (=epoch)
     for i in tqdm(range(step)):
-        disc_history.append(train_discriminator(ja_seq_len, x_train, y_train, batch_size))
-        gan_history.append(train_generator(ja_seq_len, x_train, batch_size))
+        disc_history.append(train_discriminator(ja_seq_len, ja_vocab_size, x_train, y_train, batch_size))
+        gan_history.append(train_generator(ja_seq_len, ja_vocab_size, x_train, batch_size))
 
         # 途中結果の確認
         if i % 10 == 9:
-            translate(detokenizer_en, detokenizer_ja, x_valid, y_valid, ja_seq_len, test_count=2)
+            translate(detokenizer_en, detokenizer_ja, x_valid, y_valid, ja_seq_len, ja_vocab_size, test_count=2)
             # TODO: 途中結果の保存（generator/discriminatorの重み、学習結果(history)）
 
     return {'disc_history': disc_history, 'gan_history': gan_history}
