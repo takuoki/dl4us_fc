@@ -3,6 +3,7 @@
 import numpy as np
 import pickle
 import csv
+from datetime import datetime as dt
 from nltk.translate.bleu_score import sentence_bleu
 
 # detoken
@@ -46,12 +47,18 @@ def predict(en_input_seqs, ja_input_seqs):
     return outputs[1:]
 
 # predict_all
-def predict_all(en_input_seqs, ja_seq_len):
+def predict_all(en_input_seqs, ja_seq_len, return_each=False):
 
+    ja_output_seqs_list = []
     ja_output_seqs = np.zeros((en_input_seqs.shape[0], ja_seq_len), dtype=np.int32)
     for _ in range(ja_seq_len):
         ja_input_seqs = initialize_seq(ja_output_seqs)
         ja_output_seqs = predict(en_input_seqs, ja_input_seqs)
+        if return_each:
+            ja_output_seqs_list.append(ja_output_seqs)
+
+    if return_each:
+        return np.array(ja_output_seqs_list, dtype=np.int32)
 
     return ja_output_seqs
 
@@ -64,7 +71,7 @@ def translate_sample(detokenizer_en, detokenizer_ja, en_seqs, ja_seqs, ja_seq_le
     for i in range(test_count):
         print('EN(', i, '): ', en_trans_seqs[i])
         print('JA-predict(', i, '): ', ja_pred_seqs[i])
-        print('JA-answer (', i, '): ', ja_trans_seqs[i][1:])
+        print('JA-answer (', i, '): ', ja_trans_seqs[i])
 
 # save all prediction as CSV
 #   return seqs and ja predict seqs without padding
@@ -121,11 +128,20 @@ def scoreBLEU(detokenizer_ja, predict_seq, ref_seq):
     return bleu / len(predict_seq)
 
 # save model
-def save_model(outdir, prefix):
-    generator_model.save_weights(outdir+'/'+prefix+'_generator_model_weight.h5')
-    discriminator_model.save_weights(outdir+'/'+prefix+'_discriminator_model_weight.h5')
+def save_model(outdir, prefix, gen=True, disc=True):
+    if gen:
+        generator_model.save_weights(outdir+'/'+prefix+'_generator_model_weight.h5')
+    if disc:
+        discriminator_model.save_weights(outdir+'/'+prefix+'_discriminator_model_weight.h5')
 
-# save history
-def save_history(outdir, history):
-    with open(outdir+"/history.pickle", mode='wb') as f:
-        pickle.dump(history, f)
+# save pickle
+def save_pickle(outdir, obj, name):
+    with open(outdir+'/'+name+'.pickle', mode='wb') as f:
+        pickle.dump(obj, f)
+
+# save result
+def save_result(outdir, score):
+    result = [[dt.now().strftime('%Y%m%d%H%M%S'), score]]
+    with open(outdir + "/result.csv", 'w') as file:
+        writer = csv.writer(file, lineterminator='\n')
+        writer.writerows(result)

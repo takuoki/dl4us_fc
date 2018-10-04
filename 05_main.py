@@ -36,26 +36,23 @@ batch_size = 128
 gen_history = train_only_generator(ja_seq_len, ja_vocab_size, x_train, y_train, epochs=epochs, batch_size=batch_size)
 print('done train_only_generator')
 
+save_model(outdir, 'end', gen=True, disc=False)
+save_pickle(outdir, gen_history, 'gen_history')
 translate_sample(detokenizer_en, detokenizer_ja, x_valid, y_valid, ja_seq_len)
 
 print('start train_discriminator')
 disc_history = train_discriminator(ja_seq_len, x_train, y_train, epochs=epochs, batch_size=batch_size)
 print('done train_discriminator')
 
-history = {
-    'gen_history': gen_history,
-    'disc_history': disc_history,
-}
-
-save_history(outdir, history)
-save_model(outdir, 'end')
+save_pickle(outdir, disc_history, 'disc_history')
+save_model(outdir, 'end', gen=False, disc=True)
 
 # historyをplot
 plt.title('acc/loss')
-plt.plot(history['gen_history'].history['acc'])
-plt.plot(history['gen_history'].history['loss'])
-plt.plot(history['disc_history'].history['acc'])
-plt.plot(history['disc_history'].history['loss'])
+plt.plot(gen_history.history['acc'])
+plt.plot(gen_history.history['loss'])
+plt.plot(disc_history.history['acc'])
+plt.plot(disc_history.history['loss'])
 plt.legend(['gen_acc', 'gen_loss', 'disc_acc', 'disc_loss'])
 plt.show
 
@@ -63,4 +60,7 @@ plt.show
 y_valid_wp, y_pred_wp = save_all_prediction(outdir, x_valid, y_valid, ja_seq_len)
 
 # 精度検証
-print(scoreBLEU(detokenizer_ja, y_pred_wp, y_valid_wp))
+score = scoreBLEU(detokenizer_ja, y_pred_wp, y_valid_wp)
+
+# 結果の保存
+save_result(outdir, score)
