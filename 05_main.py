@@ -2,46 +2,53 @@
 
 %matplotlib inline
 import matplotlib.pyplot as plt
+from datetime import datetime as dt
 from keras.utils import plot_model
+import os
 
 final_dir = '/root/userspace/final/'
+
+# create output dir
+outdir = final_dir+'out/'+dt.now().strftime('%Y%m%d%H%M%S')
+os.makedirs(outdir)
 
 # data load
 x_train, y_train, x_valid, y_valid, tokenizer_en, tokenizer_ja, detokenizer_en, detokenizer_ja = load_data(final_dir)
 
-en_seq_len = 0
-for i in range(x_train.shape[0]):
-    if x_train[i].shape[0] > en_seq_len:
-        en_seq_len = x_train[i].shape[0]
-for i in range(x_valid.shape[0]):
-    if x_valid[i].shape[0] > en_seq_len:
-        en_seq_len = x_valid[i].shape[0]
-
-ja_seq_len = 0
-for i in range(y_train.shape[0]):
-    if y_train[i].shape[0] > ja_seq_len:
-        ja_seq_len = y_train[i].shape[0]
-for i in range(y_valid.shape[0]):
-    if y_valid[i].shape[0] > ja_seq_len:
-        ja_seq_len = y_valid[i].shape[0]
+en_seq_len = x_train.shape[1]
+ja_seq_len = y_train.shape[1]
 
 en_vocab_size = len(tokenizer_en.word_index) + 1
 ja_vocab_size = len(tokenizer_ja.word_index) + 1
 
 # 各Modelを取得
 generator_model, in1, in2 = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
-plot_model(generator_model, to_file=final_dir+'generator_model.png')
-
-generator_model.compile(loss='sparse_categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+plot_model(generator_model, to_file=outdir+'/generator_model.png')
 
 discriminator_model, in3 = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
-plot_model(discriminator_model, to_file=final_dir+'discriminator_model.png')
+plot_model(discriminator_model, to_file=outdir+'/discriminator_model.png')
+
+save_model(outdir, 'start')
 
 # train
-history = train(
-    ja_seq_len, ja_vocab_size, x_train, y_train,
-    x_valid, y_valid, detokenizer_en, detokenizer_ja,
-    epochs=20, batch_size=128)
+epochs = 20
+batch_size = 128
+gen_history = train_only_generator(ja_seq_len, ja_vocab_size, x_train, y_train, epochs=epochs, batch_size=batch_size)
+print('done train_only_generator')
+
+translate_sample(detokenizer_en, detokenizer_ja, x_valid, y_valid, ja_seq_len)
+
+print('start train_discriminator')
+disc_history = train_discriminator(ja_seq_len, x_train, y_train, epochs=epochs, batch_size=batch_size)
+print('done train_discriminator')
+
+history = {
+    'gen_history': gen_history,
+    'disc_history': disc_history,
+}
+
+save_history(outdir, history)
+save_model(outdir, 'end')
 
 # historyをplot
 plt.title('acc/loss')
@@ -52,7 +59,8 @@ plt.plot(history['disc_history'].history['loss'])
 plt.legend(['gen_acc', 'gen_loss', 'disc_acc', 'disc_loss'])
 plt.show
 
-# validデータの翻訳 & 保存
-translate(detokenizer_en, detokenizer_ja, x_valid, y_valid, ja_seq_len, ja_vocab_size)
+# validデータの予測 & 保存
+y_valid_wp, y_pred_wp = save_all_prediction(outdir, x_valid, y_valid, ja_seq_len)
 
-# TODO: 精度検証
+# 精度検証
+print(scoreBLEU(detokenizer_ja, y_pred_wp, y_valid_wp))

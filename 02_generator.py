@@ -51,31 +51,6 @@ def generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size, emb_dim=256,
     dense_layer = Dense(ja_vocab_size, activation='softmax')
 
     model = Model([encoder_inputs, decoder_inputs], dense_layer(decoder_outputs))
+    model.compile(loss='sparse_categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
     return model, encoder_inputs, decoder_inputs
-
-# initialize_seq
-def initialize_seq(ja_seqs):
-
-    results = np.array([np.zeros(ja_seqs.shape[1], dtype=np.int32)])
-    for i in range(ja_seqs.shape[0]):
-        # 1文字目bos、以降はひとつスライド
-        results = np.concatenate((results, np.array([np.append(np.array([1]), ja_seqs[i][:-1])])))
-
-    return np.array(results[1:], dtype=np.int32)
-
-# predict
-def predict(en_input_seqs, ja_input_seqs):
-
-    outputs = generator_model.predict([en_input_seqs, ja_input_seqs])
-    return np.argmax(outputs, axis=-1)
-
-# predict_all
-def predict_all(en_input_seqs, ja_seq_len):
-
-    ja_output_seqs = np.zeros((en_input_seqs.shape[0], ja_seq_len), dtype=np.int32)
-    for _ in range(ja_seq_len):
-        ja_input_seqs = initialize_seq(ja_output_seqs)
-        ja_output_seqs = predict(en_input_seqs, ja_input_seqs)
-
-    return ja_output_seqs

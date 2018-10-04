@@ -24,9 +24,3 @@ def discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size, emb_dim=
     model.compile(loss='categorical_crossentropy', optimizer=opt, metrics=['accuracy'])
 
     return model, encoder_inputs
-
-# switch_trainable
-def switch_trainable(model, status):
-    model.trainable = status
-    for l in model.layers:
-        l.trainable = status
