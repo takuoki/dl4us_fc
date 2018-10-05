@@ -19,7 +19,7 @@ def train_only_generator(ja_seq_len, ja_vocab_size, x_train, y_train, epochs=20,
 def train_discriminator(ja_seq_len, x_train, y_train, epochs=20, batch_size=128):
 
     # データの半分だけ、本物の英語文/日本語文をランダムに選択
-    test_size = x_train.shape[0] / 2
+    test_size = int(x_train.shape[0] / 2)
     en_train, _, ja_train, _ = train_test_split(x_train, y_train, test_size=test_size)
 
     # 英語文を元に日本語文を生成

@@ -37,14 +37,14 @@ gen_history = train_only_generator(ja_seq_len, ja_vocab_size, x_train, y_train, 
 print('done train_only_generator')
 
 save_model(outdir, 'end', gen=True, disc=False)
-save_pickle(outdir, gen_history, 'gen_history')
+save_pickle(outdir, gen_history.history, 'gen_history')
 translate_sample(detokenizer_en, detokenizer_ja, x_valid, y_valid, ja_seq_len)
 
 print('start train_discriminator')
 disc_history = train_discriminator(ja_seq_len, x_train, y_train, epochs=epochs, batch_size=batch_size)
 print('done train_discriminator')
 
-save_pickle(outdir, disc_history, 'disc_history')
+save_pickle(outdir, disc_history.history, 'disc_history')
 save_model(outdir, 'end', gen=False, disc=True)
 
 # historyをplot
