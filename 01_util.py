@@ -32,7 +32,7 @@ def initialize_seq(ja_seqs):
     return np.array(results[1:], dtype=np.int32)
 
 # predict
-def predict(generator_model, en_input_seqs, ja_input_seqs):
+def predict(generator_model, en_input_seqs, ja_input_seqs, ja_seq_len):
 
     outputs = np.zeros((1, ja_seq_len), dtype=np.int32)
     for i in range(int(en_input_seqs.shape[0]/1000)): # for Memory Error
@@ -54,11 +54,12 @@ def predict_all(generator_model, en_input_seqs, ja_seq_len, return_each=False):
     for i in range(ja_seq_len):
         print('predict_all: count', i+1, '/', ja_seq_len)
         ja_input_seqs = initialize_seq(ja_output_seqs)
-        ja_output_seqs = predict(generator_model, en_input_seqs, ja_input_seqs)
+        ja_output_seqs = predict(generator_model, en_input_seqs, ja_input_seqs, ja_seq_len)
         if return_each:
             ja_output_seqs_list.append(ja_output_seqs)
 
     if return_each:
+        # [0: [[case1], [case2], [case3]], ..., ja_seq_len-1: [[case1], [case2], [case3]]]
         return np.array(ja_output_seqs_list, dtype=np.int32)
 
     return ja_output_seqs

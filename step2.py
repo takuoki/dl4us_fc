@@ -22,15 +22,16 @@ en_vocab_size = len(tokenizer_en.word_index) + 1
 ja_vocab_size = len(tokenizer_ja.word_index) + 1
 
 # 各Modelを取得
-generator_model_10 = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
-generator_model_20 = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
-generator_model_50 = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
+generator_model_10, _ = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
+generator_model_20, _ = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
+generator_model_50, _ = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
 
 discriminator_model_10 = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
 discriminator_model_20 = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
 discriminator_model_50 = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
 
 # train
+# モデルを3つ用意するのではなくて、各段階で重みだけ保存しておけばよかった。。
 epochs = 30 # for discriminator
 batch_size = 128
 
@@ -69,7 +70,7 @@ save_pickle(outdir, disc_history_50.history, 'disc_history_50')
 
 print('done train discriminator 50')
 
-# historyをplot
+# historyをplot TODO: validデータの結果をプロットする
 plt.title('acc/loss')
 plt.plot(disc_history_10.history['acc'])
 plt.plot(disc_history_10.history['loss'])

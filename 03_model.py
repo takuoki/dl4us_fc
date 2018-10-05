@@ -38,28 +38,35 @@ def decoder(encoder_states, seq_len, vocab_size, emb_dim=256, hid_dim=256):
     # TODO: LSTMレイヤの多層化、双方向化
     outputs, _, _ = lstm_layer(embededding_layer(input_layer), initial_state=encoder_states)
 
-    return input_layer, outputs
+    # for 1 word generator
+    input_layer_for1 = Input(shape=(1,))
+    outputs_for1, _, _ = lstm_layer(embededding_layer(input_layer_for1), initial_state=encoder_states)
+
+    return input_layer, outputs, input_layer_for1, outputs_for1
 
 # generator
 #   model : (en_seq_len, ja_seq_len) -> (ja_seq_len, ja_vocab_size)
 def generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size, emb_dim=256, hid_dim=256):
 
     encoder_inputs, _, encoder_states = encoder(en_seq_len, en_vocab_size, emb_dim, hid_dim)
-    decoder_inputs, decoder_outputs = decoder(encoder_states, ja_seq_len, ja_vocab_size, emb_dim=256, hid_dim=256)
+    decoder_inputs, decoder_outputs, decoder_inputs_for1, decoder_outputs_for1 = decoder(encoder_states, ja_seq_len, ja_vocab_size, emb_dim=256, hid_dim=256)
 
     dense_layer = Dense(ja_vocab_size, activation='softmax')
 
     model = Model([encoder_inputs, decoder_inputs], dense_layer(decoder_outputs))
     model.compile(loss='sparse_categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
-    return model
+    model_for1 = Model([encoder_inputs, decoder_inputs_for1], dense_layer(decoder_outputs_for1))
+    model_for1.compile(loss='sparse_categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+
+    return model, model_for1
 
 # discriminator
 #   model : (en_seq_len, ja_seq_len) -> (2) : True/False
 def discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size, emb_dim=256, hid_dim=256, opt=Adam(lr=1e-4)):
 
     encoder_inputs, _, encoder_states = encoder(en_seq_len, en_vocab_size, emb_dim, hid_dim)
-    decoder_inputs, decoder_outputs = decoder(encoder_states, ja_seq_len, ja_vocab_size, emb_dim, hid_dim)
+    decoder_inputs, decoder_outputs, _, _ = decoder(encoder_states, ja_seq_len, ja_vocab_size, emb_dim, hid_dim)
 
     x = Flatten()(decoder_outputs)
     x = Dense(256)(x)
