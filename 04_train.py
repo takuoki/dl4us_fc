@@ -18,8 +18,9 @@ def train_only_generator(ja_seq_len, ja_vocab_size, x_train, y_train, epochs=20,
 # train_discriminator
 def train_discriminator(ja_seq_len, x_train, y_train, epochs=20, batch_size=128):
 
-    en_train = x_train
-    ja_train = y_train
+    # データの半分だけ、本物の英語文/日本語文をランダムに選択
+    test_size = x_train.shape[0] / 2
+    en_train, _, ja_train, _ = train_test_split(x_train, y_train, test_size=test_size)
 
     # 英語文を元に日本語文を生成
     ja_generated = predict_all(en_train, ja_seq_len)
@@ -28,9 +29,9 @@ def train_discriminator(ja_seq_len, x_train, y_train, epochs=20, batch_size=128)
     # 本物/偽物データを結合
     en_input = np.concatenate((en_train, en_train))
     ja_input = np.concatenate((ja_train, ja_generated))
-    y = np.zeros([2*en_train.shape[0], 2], dtype=np.int32)
-    y[:en_train.shape[0], 1] = 1
-    y[en_train.shape[0]:, 0] = 1
+    y = np.zeros([2*test_size, 2], dtype=np.int32)
+    y[:test_size, 1] = 1
+    y[test_size:, 0] = 1
 
     # discriminatorの学習
     return discriminator_model.fit([en_input, ja_input], y, epochs=epochs, batch_size=batch_size)

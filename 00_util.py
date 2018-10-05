@@ -51,7 +51,8 @@ def predict_all(en_input_seqs, ja_seq_len, return_each=False):
 
     ja_output_seqs_list = []
     ja_output_seqs = np.zeros((en_input_seqs.shape[0], ja_seq_len), dtype=np.int32)
-    for _ in range(ja_seq_len):
+    for i in range(ja_seq_len):
+        print('predict_all: count', i+1, '/', ja_seq_len)
         ja_input_seqs = initialize_seq(ja_output_seqs)
         ja_output_seqs = predict(en_input_seqs, ja_input_seqs)
         if return_each:
