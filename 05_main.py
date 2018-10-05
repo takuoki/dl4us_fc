@@ -15,9 +15,6 @@ os.makedirs(outdir)
 # data load
 x_train, y_train, x_valid, y_valid, tokenizer_en, tokenizer_ja, detokenizer_en, detokenizer_ja = load_data(final_dir)
 
-x_train = x_train[:1000]
-y_train = y_train[:1000]
-
 en_seq_len = x_train.shape[1]
 ja_seq_len = y_train.shape[1]
 
@@ -35,7 +32,7 @@ save_model(outdir, generator_model, 'start_generator_model')
 save_model(outdir, discriminator_model, 'start_discriminator_model')
 
 # train
-epochs = 1
+epochs = 20
 batch_size = 128
 gen_history = train_generator(generator_model, x_train, y_train, x_valid, y_valid, epochs=epochs, batch_size=batch_size)
 print('done train_generator')
@@ -68,3 +65,4 @@ score = scoreBLEU(detokenizer_ja, y_pred_wp, y_valid_wp)
 
 # 結果の保存
 save_result(outdir, score)
+print('done')
