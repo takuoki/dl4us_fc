@@ -15,6 +15,9 @@ os.makedirs(outdir)
 # data load
 x_train, y_train, x_valid, y_valid, tokenizer_en, tokenizer_ja, detokenizer_en, detokenizer_ja = load_data(final_dir)
 
+x_train = x_train[:1000]
+y_train = y_train[:1000]
+
 en_seq_len = x_train.shape[1]
 ja_seq_len = y_train.shape[1]
 
@@ -22,30 +25,31 @@ en_vocab_size = len(tokenizer_en.word_index) + 1
 ja_vocab_size = len(tokenizer_ja.word_index) + 1
 
 # 各Modelを取得
-generator_model, in1, in2 = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
+generator_model = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
 plot_model(generator_model, to_file=outdir+'/generator_model.png')
 
-discriminator_model, in3 = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
+discriminator_model = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
 plot_model(discriminator_model, to_file=outdir+'/discriminator_model.png')
 
-save_model(outdir, 'start')
+save_model(outdir, generator_model, 'start_generator_model')
+save_model(outdir, discriminator_model, 'start_discriminator_model')
 
 # train
-epochs = 20
+epochs = 1
 batch_size = 128
-gen_history = train_only_generator(ja_seq_len, ja_vocab_size, x_train, y_train, epochs=epochs, batch_size=batch_size)
-print('done train_only_generator')
+gen_history = train_generator(generator_model, x_train, y_train, x_valid, y_valid, epochs=epochs, batch_size=batch_size)
+print('done train_generator')
 
-save_model(outdir, 'end', gen=True, disc=False)
+save_model(outdir, generator_model, 'end_generator_model')
 save_pickle(outdir, gen_history.history, 'gen_history')
-translate_sample(detokenizer_en, detokenizer_ja, x_valid, y_valid, ja_seq_len)
+translate_sample(generator_model, detokenizer_en, detokenizer_ja, x_valid, y_valid, ja_seq_len)
 
 print('start train_discriminator')
-disc_history = train_discriminator(ja_seq_len, x_train, y_train, epochs=epochs, batch_size=batch_size)
+disc_history = train_discriminator(discriminator_model, generator_model, ja_seq_len, x_train, y_train, x_valid, y_valid, epochs=epochs, batch_size=batch_size)
 print('done train_discriminator')
 
 save_pickle(outdir, disc_history.history, 'disc_history')
-save_model(outdir, 'end', gen=False, disc=True)
+save_model(outdir, discriminator_model, 'end_discriminator_model')
 
 # historyをplot
 plt.title('acc/loss')
@@ -57,7 +61,7 @@ plt.legend(['gen_acc', 'gen_loss', 'disc_acc', 'disc_loss'])
 plt.show
 
 # validデータの予測 & 保存
-y_valid_wp, y_pred_wp = save_all_prediction(outdir, x_valid, y_valid, ja_seq_len)
+y_valid_wp, y_pred_wp = save_all_prediction(generator_model, outdir, x_valid, y_valid, ja_seq_len)
 
 # 精度検証
 score = scoreBLEU(detokenizer_ja, y_pred_wp, y_valid_wp)

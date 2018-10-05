@@ -1,4 +1,4 @@
-# 00_util
+# 01_util
 
 import numpy as np
 import pickle
@@ -32,7 +32,7 @@ def initialize_seq(ja_seqs):
     return np.array(results[1:], dtype=np.int32)
 
 # predict
-def predict(en_input_seqs, ja_input_seqs):
+def predict(generator_model, en_input_seqs, ja_input_seqs):
 
     outputs = np.zeros((1, ja_seq_len), dtype=np.int32)
     for i in range(int(en_input_seqs.shape[0]/1000)): # for Memory Error
@@ -47,14 +47,14 @@ def predict(en_input_seqs, ja_input_seqs):
     return outputs[1:]
 
 # predict_all
-def predict_all(en_input_seqs, ja_seq_len, return_each=False):
+def predict_all(generator_model, en_input_seqs, ja_seq_len, return_each=False):
 
     ja_output_seqs_list = []
     ja_output_seqs = np.zeros((en_input_seqs.shape[0], ja_seq_len), dtype=np.int32)
     for i in range(ja_seq_len):
         print('predict_all: count', i+1, '/', ja_seq_len)
         ja_input_seqs = initialize_seq(ja_output_seqs)
-        ja_output_seqs = predict(en_input_seqs, ja_input_seqs)
+        ja_output_seqs = predict(generator_model, en_input_seqs, ja_input_seqs)
         if return_each:
             ja_output_seqs_list.append(ja_output_seqs)
 
@@ -64,9 +64,9 @@ def predict_all(en_input_seqs, ja_seq_len, return_each=False):
     return ja_output_seqs
 
 # translate sample
-def translate_sample(detokenizer_en, detokenizer_ja, en_seqs, ja_seqs, ja_seq_len, test_count=5):
+def translate_sample(generator_model, detokenizer_en, detokenizer_ja, en_seqs, ja_seqs, ja_seq_len, test_count=5):
     en_trans_seqs = detoken(detokenizer_en, en_seqs[:test_count])
-    ja_pred_seqs = detoken(detokenizer_ja, predict_all(en_seqs[:test_count], ja_seq_len))
+    ja_pred_seqs = detoken(detokenizer_ja, predict_all(generator_model, en_seqs[:test_count], ja_seq_len))
     ja_trans_seqs = detoken(detokenizer_ja, ja_seqs[:test_count])
 
     for i in range(test_count):
@@ -76,10 +76,10 @@ def translate_sample(detokenizer_en, detokenizer_ja, en_seqs, ja_seqs, ja_seq_le
 
 # save all prediction as CSV
 #   return seqs and ja predict seqs without padding
-def save_all_prediction(outdir, en_seqs, ja_seq, ja_seq_len):
+def save_all_prediction(generator_model, outdir, en_seqs, ja_seq, ja_seq_len):
 
     # 予測後の日本語文の取得
-    ja_pred_seqs = predict_all(en_seqs, ja_seq_len)
+    ja_pred_seqs = predict_all(generator_model, en_seqs, ja_seq_len)
 
     # padding除去
     ja_seqs_without_pad = []
@@ -129,11 +129,8 @@ def scoreBLEU(detokenizer_ja, predict_seq, ref_seq):
     return bleu / len(predict_seq)
 
 # save model
-def save_model(outdir, prefix, gen=True, disc=True):
-    if gen:
-        generator_model.save_weights(outdir+'/'+prefix+'_generator_model_weight.h5')
-    if disc:
-        discriminator_model.save_weights(outdir+'/'+prefix+'_discriminator_model_weight.h5')
+def save_model(outdir, model, name):
+    model.save_weights(outdir+'/'+name+'.h5')
 
 # save pickle
 def save_pickle(outdir, obj, name):
