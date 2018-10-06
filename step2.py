@@ -22,9 +22,9 @@ en_vocab_size = len(tokenizer_en.word_index) + 1
 ja_vocab_size = len(tokenizer_ja.word_index) + 1
 
 # 各Modelを取得
-generator_model_10, _ = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
-generator_model_20, _ = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
-generator_model_50, _ = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
+generator_model_10, _, _ = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
+generator_model_20, _, _ = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
+generator_model_50, _, _ = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
 
 discriminator_model_10 = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
 discriminator_model_20 = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
@@ -70,15 +70,28 @@ save_pickle(outdir, disc_history_50.history, 'disc_history_50')
 
 print('done train discriminator 50')
 
-# historyをplot TODO: validデータの結果をプロットする
+# historyをplot
 plt.title('acc/loss')
 plt.plot(disc_history_10.history['acc'])
+plt.plot(disc_history_10.history['val_acc'])
 plt.plot(disc_history_10.history['loss'])
+plt.plot(disc_history_10.history['val_loss'])
 plt.plot(disc_history_20.history['acc'])
+plt.plot(disc_history_20.history['val_acc'])
 plt.plot(disc_history_20.history['loss'])
+plt.plot(disc_history_20.history['val_loss'])
 plt.plot(disc_history_50.history['acc'])
+plt.plot(disc_history_50.history['val_acc'])
 plt.plot(disc_history_50.history['loss'])
-plt.legend(['acc_10', 'loss_10', 'acc_20', 'loss_20', 'acc_50', 'loss_50'])
+plt.plot(disc_history_50.history['val_loss'])
+plt.legend([
+    'acc_10', 'v_acc_10',
+    'loss_10', 'v_loss_10',
+    'acc_20', 'v_acc_20',
+    'loss_20', 'v_loss_20',
+    'acc_50', 'v_acc_50',
+    'loss_50', 'v_loss_50',
+])
 plt.show
 
 # 結果の保存

@@ -64,6 +64,33 @@ def predict_all(generator_model, en_input_seqs, ja_seq_len, return_each=False):
 
     return ja_output_seqs
 
+# predict for 1 word generator
+#   only predict 1 sentence
+def predict_for1(encoder_model, decoder_model, en_input_seq, ja_seq_len):
+    states_value = encoder_model.predict(en_input_seq)
+    input_seq = np.array([1]) # bos
+    output_seq = [1] # bos
+
+    for _ in range(ja_seq_len):
+        outputs, *states_value = decoder_model.predict([input_seq] + states_value)
+        predict_word = np.argmax(outputs[0, -1, :])
+        output_seq.append(predict_word)
+
+        if (predict_word == 0) or (predict_word == 2): # 0: padding, 2: eos
+            break
+
+        input_seq = np.array([predict_word])
+
+    return output_seq
+
+# predict for 1 word generator
+#   predict multiple sentences
+def predicts_for1(encoder_model, decoder_model, en_input_seqs, ja_seq_len):
+    output_seqs = []
+    for i in range(en_input_seqs.shape[0]):
+        output_seqs.append(predict_for1(encoder_model, decoder_model, en_input_seqs[i:i+1], ja_seq_len))
+    return output_seqs
+
 # translate sample
 def translate_sample(generator_model, detokenizer_en, detokenizer_ja, en_seqs, ja_seqs, ja_seq_len, test_count=5):
     en_trans_seqs = detoken(detokenizer_en, en_seqs[:test_count])
@@ -75,9 +102,20 @@ def translate_sample(generator_model, detokenizer_en, detokenizer_ja, en_seqs, j
         print('JA-predict(', i, '): ', ja_pred_seqs[i])
         print('JA-answer (', i, '): ', ja_trans_seqs[i])
 
+# translate sample for 1 word generator
+def translate_sample_for1(encoder_model, decoder_model, detokenizer_en, detokenizer_ja, en_seqs, ja_seqs, ja_seq_len, test_count=5):
+    en_trans_seqs = detoken(detokenizer_en, en_seqs[:test_count])
+    ja_pred_seqs = detoken(detokenizer_ja, predicts_for1(encoder_model, decoder_model, en_seqs[:test_count], ja_seq_len))
+    ja_trans_seqs = detoken(detokenizer_ja, ja_seqs[:test_count])
+
+    for i in range(test_count):
+        print('EN(', i, '): ', en_trans_seqs[i])
+        print('JA-predict(', i, '): ', ja_pred_seqs[i])
+        print('JA-answer (', i, '): ', ja_trans_seqs[i])
+
 # save all prediction as CSV
 #   return seqs and ja predict seqs without padding
-def save_all_prediction(generator_model, outdir, en_seqs, ja_seq, ja_seq_len):
+def save_all_prediction(generator_model, outdir, name, en_seqs, ja_seq, ja_seq_len):
 
     # 予測後の日本語文の取得
     ja_pred_seqs = predict_all(generator_model, en_seqs, ja_seq_len)
@@ -103,7 +141,37 @@ def save_all_prediction(generator_model, outdir, en_seqs, ja_seq, ja_seq_len):
         ja_pred_seqs_without_pad.append(without_pad)
 
     # CSV保存
-    with open(outdir + "/valid.csv", 'w') as file:
+    with open(outdir+'/'+name+'.csv', 'w') as file:
+        writer = csv.writer(file, lineterminator='\n')
+        writer.writerows(ja_pred_seqs_without_pad)
+
+    return ja_seqs_without_pad, ja_pred_seqs_without_pad
+
+# save all prediction as CSV for 1 word generator
+#   return seqs and ja predict seqs without padding
+def save_all_prediction_for1(encoder_model, decoder_model, outdir, name, en_seqs, ja_seq, ja_seq_len):
+
+    # 予測後の日本語文の取得
+    ja_pred_seqs = predicts_for1(encoder_model, decoder_model, en_seqs, ja_seq_len)
+
+    # padding除去
+    ja_seqs_without_pad = []
+    ja_pred_seqs_without_pad = []
+    for i in range(len(ja_pred_seqs)):
+
+        without_pad = []
+        for c in ja_seq[i]:
+            if c == 0 or c == 1 or c == 2: # 0: padding, 1: bos, 2: eos
+                continue
+            without_pad.append(c)
+
+        ja_seqs_without_pad.append(without_pad)
+
+        without_pad = ja_pred_seqs[i][1:-1]
+        ja_pred_seqs_without_pad.append(without_pad)
+
+    # CSV保存
+    with open(outdir+'/'+name+'.csv', 'w') as file:
         writer = csv.writer(file, lineterminator='\n')
         writer.writerows(ja_pred_seqs_without_pad)
 
@@ -133,14 +201,24 @@ def scoreBLEU(detokenizer_ja, predict_seq, ref_seq):
 def save_model(outdir, model, name):
     model.save_weights(outdir+'/'+name+'.h5')
 
+# load model
+def load_model(outdir, model, name):
+    model.load_weights(outdir+'/'+name+'.h5')
+
 # save pickle
 def save_pickle(outdir, obj, name):
     with open(outdir+'/'+name+'.pickle', mode='wb') as f:
         pickle.dump(obj, f)
 
+# load pickle
+def load_pickle(outdir, name):
+    with open(outdir+'/'+name+'.pickle', mode='rb') as f:
+        return pickle.load(f)
+
 # save result
-def save_result(outdir, score):
-    result = [[dt.now().strftime('%Y%m%d%H%M%S'), score]]
-    with open(outdir + "/result.csv", 'w') as file:
+def save_result(outdir, ary):
+    result = [['end time', dt.now().strftime('%Y%m%d%H%M%S')]]
+    result.extend(ary)
+    with open(outdir + '/result.csv', 'w') as file:
         writer = csv.writer(file, lineterminator='\n')
         writer.writerows(result)
