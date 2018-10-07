@@ -7,7 +7,7 @@ from keras.utils import plot_model
 import os
 import numpy as np
 from keras.models import Model
-from keras.layers import Input, Embedding, LSTM, concatenate
+from keras.layers import Input, Embedding, LSTM, Average
 from keras.layers.core import Dense, Lambda
 from keras import backend as K
 
@@ -27,6 +27,7 @@ def bidirectional_decoder(encoder_states, seq_len, vocab_size, emb_dim=256, hid_
     x1 = lstm_layer(x, initial_state=encoder_states)
     x2 = rev_lstm_layer(x, initial_state=encoder_states)
     x2 = Lambda(lambda x: K.reverse(x, axes=1))(x2)
+    # outputs = Average()([x1, x2])
     outputs = Lambda(lambda x: K.concatenate([x[0], x[1]], axis=-1))([x1, x2])
 
     return input_layer, outputs
@@ -67,42 +68,51 @@ bd_generator_model = bidirectional_generator(en_seq_len, ja_seq_len, en_vocab_si
 plot_model(bd_generator_model, to_file=outdir+'/bd_generator_model.png')
 
 # train generator
-epochs = 30
-batch_size = 128
-gen_history = train_generator(bd_generator_model, x_train, y_train, x_valid, y_valid, epochs=epochs, batch_size=batch_size)
-print('done train_generator')
+# epochs = 30
+# batch_size = 128
+# gen_history = train_generator(bd_generator_model, x_train, y_train, x_valid, y_valid, epochs=epochs, batch_size=batch_size)
+# gen_history = gen_history.history
+# print('done train_generator')
 
-save_model(outdir, bd_generator_model, 'bd_generator_model')
-save_pickle(outdir, gen_history.history, 'gen_history')
-
-print('sample translate')
-translate_sample(bd_generator_model, detokenizer_en, detokenizer_ja, x_valid, y_valid, ja_seq_len)
-
-print('sample translate with each steps')
-test_count = 3
-pred_seqs = predict_all(bd_generator_model, x_valid[:test_count], ja_seq_len, return_each=True)
-for test_case in range(pred_seqs.shape[1]):
-    for i in range(ja_seq_len):
-        print('case', test_case, '(', i, '):', detoken(detokenizer_ja, pred_seqs[i][test_case:test_case+1])[0])
+# save_model(outdir, bd_generator_model, 'bd_generator_model')
+# save_pickle(outdir, gen_history, 'gen_history')
+load_model(final_dir+'out/20181006081714', bd_generator_model, 'bd_generator_model')
+gen_history = load_pickle(final_dir+'out/20181006081714', 'gen_history')
 
 # historyをplot
 plt.title('acc/loss')
-plt.plot(bd_generator_model.history['acc'])
-plt.plot(bd_generator_model.history['val_acc'])
-plt.plot(bd_generator_model.history['loss'])
-plt.plot(bd_generator_model.history['val_loss'])
+plt.plot(gen_history['acc'])
+plt.plot(gen_history['val_acc'])
+plt.plot(gen_history['loss'])
+plt.plot(gen_history['val_loss'])
 plt.legend([
     'g_acc', 'g_v_acc',
     'g_loss', 'g_v_loss',
 ])
 plt.show
 
-# validデータの予測 & 保存
-y_valid_wp, y_pred_wp = save_all_prediction(bd_generator_model, outdir, 'valid', x_valid, y_valid, ja_seq_len)
+# 通常のgeneratorモデルで予測したvalidデータを読み込む
+preded_outdir = '20181006031811'
+pred_seq = load_csv(final_dir+'out/'+preded_outdir, 'valid', ja_seq_len)
+
+# 今回学習したモデルで予測結果を変換（改良のつもり）
+y_valid_wp, y_pred_wp = save_prediction(bd_generator_model, outdir, 'valid', x_valid, pred_seq, y_valid, ja_seq_len)
 
 # 精度検証
 score = scoreBLEU(detokenizer_ja, y_pred_wp, y_valid_wp)
 
 # 結果の保存
-save_result(outdir, [['BLEU score', score]])
+save_result(outdir, [['BLEU score', score], ['preded_outdir', preded_outdir]])
+
+# 結果の表示
+cnt = 10
+pred1 = detoken(detokenizer_ja, pred_seq[:cnt, 1:], join_char=True)
+pred2 = detoken(detokenizer_ja, y_pred_wp[:cnt], join_char=True)
+valid = detoken(detokenizer_ja, y_valid_wp[:cnt], join_char=True)
+
+for i in range(cnt):
+    print('pred1(', i, '):', pred1[i])
+    print('pred2(', i, '):', pred2[i])
+    print('valid(', i, '):', valid[i])
+
 print('done')

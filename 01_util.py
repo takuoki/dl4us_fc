@@ -113,9 +113,43 @@ def translate_sample_for1(encoder_model, decoder_model, detokenizer_en, detokeni
         print('JA-predict(', i, '): ', ja_pred_seqs[i])
         print('JA-answer (', i, '): ', ja_trans_seqs[i])
 
+# save prediction as CSV
+#   return seqs and ja predict seqs without padding
+def save_prediction(generator_model, outdir, name, en_seqs, ja_pred_seqs, ja_seqs, ja_seq_len):
+
+    # 予測後の日本語文の取得
+    ja_pred_seqs2 = predict(generator_model, en_seqs, ja_pred_seqs, ja_seq_len)
+
+    # padding除去
+    ja_seqs_without_pad = []
+    ja_pred_seqs_without_pad = []
+    for i in range(len(ja_pred_seqs2)):
+
+        without_pad = []
+        for c in ja_seqs[i]:
+            if c == 0 or c == 1 or c == 2: # 0: padding, 1: bos, 2: eos
+                continue
+            without_pad.append(c)
+
+        ja_seqs_without_pad.append(without_pad)
+
+        without_pad = []
+        for c in ja_pred_seqs2[i]:
+            if c == 0 or c == 1 or c == 2: # 0: padding, 1: bos, 2: eos
+                continue
+            without_pad.append(c)
+        ja_pred_seqs_without_pad.append(without_pad)
+
+    # CSV保存
+    with open(outdir+'/'+name+'.csv', 'w') as file:
+        writer = csv.writer(file, lineterminator='\n')
+        writer.writerows(ja_pred_seqs_without_pad)
+
+    return ja_seqs_without_pad, ja_pred_seqs_without_pad
+
 # save all prediction as CSV
 #   return seqs and ja predict seqs without padding
-def save_all_prediction(generator_model, outdir, name, en_seqs, ja_seq, ja_seq_len):
+def save_all_prediction(generator_model, outdir, name, en_seqs, ja_seqs, ja_seq_len):
 
     # 予測後の日本語文の取得
     ja_pred_seqs = predict_all(generator_model, en_seqs, ja_seq_len)
@@ -126,7 +160,7 @@ def save_all_prediction(generator_model, outdir, name, en_seqs, ja_seq, ja_seq_l
     for i in range(len(ja_pred_seqs)):
 
         without_pad = []
-        for c in ja_seq[i]:
+        for c in ja_seqs[i]:
             if c == 0 or c == 1 or c == 2: # 0: padding, 1: bos, 2: eos
                 continue
             without_pad.append(c)
@@ -176,6 +210,25 @@ def save_all_prediction_for1(encoder_model, decoder_model, outdir, name, en_seqs
         writer.writerows(ja_pred_seqs_without_pad)
 
     return ja_seqs_without_pad, ja_pred_seqs_without_pad
+
+# load CSV
+def load_csv(outdir, name, seq_len):
+    data = []
+    with open(outdir+'/'+name+'.csv', 'r') as file:
+        reader = csv.reader(file, lineterminator='\n')
+
+        for row in reader:
+            if len(row) > seq_len:
+                print('error: ', row)
+                return 'error'
+            seq = [1]   # bos
+            seq.extend(row)
+            seq.append(2)   # eos
+            for _ in range(seq_len - len(row) - 2):
+                seq.append(0)
+            data.append(seq[:seq_len])
+    
+    return np.array(data, dtype=np.int32)
 
 # score BLEU
 def scoreBLEU(detokenizer_ja, predict_seq, ref_seq):
