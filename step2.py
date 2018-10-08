@@ -26,64 +26,70 @@ generator_model_10, _, _ = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_v
 generator_model_20, _, _ = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
 generator_model_50, _, _ = generator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
 
-discriminator_model_10 = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
-discriminator_model_20 = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
-discriminator_model_50 = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
+# discriminator_model_10 = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
+# discriminator_model_20 = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
+# discriminator_model_50 = discriminator(en_seq_len, ja_seq_len, en_vocab_size, ja_vocab_size)
 
 # train
 # モデルを3つ用意するのではなくて、各段階で重みだけ保存しておけばよかった。。
 epochs = 30 # for discriminator
 batch_size = 128
 
-train_generator(generator_model_10, x_train, y_train, x_valid, y_valid, epochs=10, batch_size=batch_size)
-save_model(outdir, generator_model_10, 'generator_model_10')
+# train_generator(generator_model_10, x_train, y_train, x_valid, y_valid, epochs=10, batch_size=batch_size)
+# save_model(outdir, generator_model_10, 'generator_model_10')
+load_model(final_dir+'out/20181005063555', generator_model_10, 'generator_model_10')
 print('done train generator 10 (↓sample generated sentence)')
 translate_sample(generator_model_10, detokenizer_en, detokenizer_ja, x_valid, y_valid, ja_seq_len)
 
-train_generator(generator_model_20, x_train, y_train, x_valid, y_valid, epochs=20, batch_size=batch_size)
-save_model(outdir, generator_model_20, 'generator_model_20')
+# train_generator(generator_model_20, x_train, y_train, x_valid, y_valid, epochs=20, batch_size=batch_size)
+# save_model(outdir, generator_model_20, 'generator_model_20')
+load_model(final_dir+'out/20181005063555', generator_model_20, 'generator_model_20')
 print('done train generator 20 (↓sample generated sentence)')
 translate_sample(generator_model_20, detokenizer_en, detokenizer_ja, x_valid, y_valid, ja_seq_len)
 
-train_generator(generator_model_50, x_train, y_train, x_valid, y_valid, epochs=50, batch_size=batch_size)
-save_model(outdir, generator_model_50, 'generator_model_50')
+# train_generator(generator_model_50, x_train, y_train, x_valid, y_valid, epochs=50, batch_size=batch_size)
+# save_model(outdir, generator_model_50, 'generator_model_50')
+load_model(final_dir+'out/20181005063555', generator_model_50, 'generator_model_50')
 print('done train generator 50 (↓sample generated sentence)')
 translate_sample(generator_model_50, detokenizer_en, detokenizer_ja, x_valid, y_valid, ja_seq_len)
 
 print('start train discriminator')
 
-disc_history_10 = train_discriminator(discriminator_model_10, generator_model_10, ja_seq_len, x_train, y_train, x_valid, y_valid, epochs=epochs, batch_size=batch_size)
-save_model(outdir, discriminator_model_10, 'discriminator_model_10')
-save_pickle(outdir, disc_history_10.history, 'disc_history_10')
+# disc_history_10 = train_discriminator(discriminator_model_10, generator_model_10, ja_seq_len, x_train, y_train, x_valid, y_valid, epochs=epochs, batch_size=batch_size)
+# save_model(outdir, discriminator_model_10, 'discriminator_model_10')
+# save_pickle(outdir, disc_history_10.history, 'disc_history_10')
+disc_history_10 = load_pickle(final_dir+'out/20181005063555', 'disc_history_10')
 
 print('done train discriminator 10')
 
-disc_history_20 = train_discriminator(discriminator_model_20, generator_model_20, ja_seq_len, x_train, y_train, x_valid, y_valid, epochs=epochs, batch_size=batch_size)
-save_model(outdir, discriminator_model_20, 'discriminator_model_20')
-save_pickle(outdir, disc_history_20.history, 'disc_history_20')
+# disc_history_20 = train_discriminator(discriminator_model_20, generator_model_20, ja_seq_len, x_train, y_train, x_valid, y_valid, epochs=epochs, batch_size=batch_size)
+# save_model(outdir, discriminator_model_20, 'discriminator_model_20')
+# save_pickle(outdir, disc_history_20.history, 'disc_history_20')
+disc_history_20 = load_pickle(final_dir+'out/20181005063555', 'disc_history_20')
 
 print('done train discriminator 20')
 
-disc_history_50 = train_discriminator(discriminator_model_50, generator_model_50, ja_seq_len, x_train, y_train, x_valid, y_valid, epochs=epochs, batch_size=batch_size)
-save_model(outdir, discriminator_model_50, 'discriminator_model_50')
-save_pickle(outdir, disc_history_50.history, 'disc_history_50')
+# disc_history_50 = train_discriminator(discriminator_model_50, generator_model_50, ja_seq_len, x_train, y_train, x_valid, y_valid, epochs=epochs, batch_size=batch_size)
+# save_model(outdir, discriminator_model_50, 'discriminator_model_50')
+# save_pickle(outdir, disc_history_50.history, 'disc_history_50')
+disc_history_50 = load_pickle(final_dir+'out/20181005063555', 'disc_history_50')
 
 print('done train discriminator 50')
 
 # historyをplot
 plt.title('acc/loss')
-plt.plot(disc_history_10.history['acc'])
-plt.plot(disc_history_10.history['val_acc'])
-plt.plot(disc_history_10.history['loss'])
-plt.plot(disc_history_10.history['val_loss'])
-plt.plot(disc_history_20.history['acc'])
-plt.plot(disc_history_20.history['val_acc'])
-plt.plot(disc_history_20.history['loss'])
-plt.plot(disc_history_20.history['val_loss'])
-plt.plot(disc_history_50.history['acc'])
-plt.plot(disc_history_50.history['val_acc'])
-plt.plot(disc_history_50.history['loss'])
-plt.plot(disc_history_50.history['val_loss'])
+plt.plot(disc_history_10['acc'])
+plt.plot(disc_history_10['val_acc'])
+plt.plot(disc_history_10['loss'])
+plt.plot(disc_history_10['val_loss'])
+plt.plot(disc_history_20['acc'])
+plt.plot(disc_history_20['val_acc'])
+plt.plot(disc_history_20['loss'])
+plt.plot(disc_history_20['val_loss'])
+plt.plot(disc_history_50['acc'])
+plt.plot(disc_history_50['val_acc'])
+plt.plot(disc_history_50['loss'])
+plt.plot(disc_history_50['val_loss'])
 plt.legend([
     'acc_10', 'v_acc_10',
     'loss_10', 'v_loss_10',
@@ -95,5 +101,5 @@ plt.legend([
 plt.show
 
 # 結果の保存
-save_result(outdir, 0)
+save_result(outdir, [[]])
 print('done')
