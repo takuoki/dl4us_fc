@@ -68,16 +68,16 @@ bd_generator_model = bidirectional_generator(en_seq_len, ja_seq_len, en_vocab_si
 plot_model(bd_generator_model, to_file=outdir+'/bd_generator_model.png')
 
 # train generator
-epochs = 30
-batch_size = 128
-gen_history = train_generator(bd_generator_model, x_train, y_train, x_valid, y_valid, epochs=epochs, batch_size=batch_size)
-gen_history = gen_history.history
-print('done train_generator')
+# epochs = 30
+# batch_size = 128
+# gen_history = train_generator(bd_generator_model, x_train, y_train, x_valid, y_valid, epochs=epochs, batch_size=batch_size)
+# gen_history = gen_history.history
+# print('done train_generator')
 
-save_model(outdir, bd_generator_model, 'bd_generator_model')
-save_pickle(outdir, gen_history, 'gen_history')
-# load_model(final_dir+'out/20181006081714', bd_generator_model, 'bd_generator_model')
-# gen_history = load_pickle(final_dir+'out/20181006081714', 'gen_history')
+# save_model(outdir, bd_generator_model, 'bd_generator_model')
+# save_pickle(outdir, gen_history, 'gen_history')
+load_model(final_dir+'out/20181008015838', bd_generator_model, 'bd_generator_model')
+gen_history = load_pickle(final_dir+'out/20181008015838', 'gen_history')
 
 # historyをplot
 plt.title('acc/loss')
@@ -92,14 +92,14 @@ plt.legend([
 plt.show
 
 # 通常のgeneratorモデルで予測したvalidデータを読み込む
-# preded_outdir = '20181006031811'
-# pred_seq = load_csv(final_dir+'out/'+preded_outdir, 'valid', ja_seq_len)
+preded_outdir = '20181006031811'
+pred_seq = load_csv(final_dir+'out/'+preded_outdir, 'valid', ja_seq_len)
 
 # 今回学習したモデルで予測結果を出力
-y_valid_wp, y_pred_wp = save_all_prediction(bd_generator_model, outdir, 'valid', x_valid, y_valid, ja_seq_len)
+# y_valid_wp, y_pred_wp = save_all_prediction(bd_generator_model, outdir, 'valid', x_valid, y_valid, ja_seq_len)
 
 # 今回学習したモデルで予測結果を変換（改良のつもり）
-# y_valid_wp, y_pred_wp = save_prediction(bd_generator_model, outdir, 'valid', x_valid, pred_seq, y_valid, ja_seq_len)
+y_valid_wp, y_pred_wp = save_prediction(bd_generator_model, outdir, 'valid', x_valid, pred_seq, y_valid, ja_seq_len)
 
 # 精度検証
 score = scoreBLEU(detokenizer_ja, y_pred_wp, y_valid_wp)
