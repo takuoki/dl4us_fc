@@ -18,7 +18,7 @@ def bidirectional_decoder(encoder_states, seq_len, vocab_size, emb_dim=256, hid_
 
     # layer
     input_layer = Input(shape=(seq_len,))
-    embededding_layer = Embedding(vocab_size, emb_dim)
+    embededding_layer = Embedding(vocab_size, emb_dim, mask_zero=True)
     lstm_layer = LSTM(hid_dim, return_sequences=True)
     rev_lstm_layer = LSTM(hid_dim, return_sequences=True, go_backwards=True)
 
@@ -68,16 +68,16 @@ bd_generator_model = bidirectional_generator(en_seq_len, ja_seq_len, en_vocab_si
 plot_model(bd_generator_model, to_file=outdir+'/bd_generator_model.png')
 
 # train generator
-# epochs = 30
-# batch_size = 128
-# gen_history = train_generator(bd_generator_model, x_train, y_train, x_valid, y_valid, epochs=epochs, batch_size=batch_size)
-# gen_history = gen_history.history
-# print('done train_generator')
+epochs = 30
+batch_size = 128
+gen_history = train_generator(bd_generator_model, x_train, y_train, x_valid, y_valid, epochs=epochs, batch_size=batch_size)
+gen_history = gen_history.history
+print('done train_generator')
 
-# save_model(outdir, bd_generator_model, 'bd_generator_model')
-# save_pickle(outdir, gen_history, 'gen_history')
-load_model(final_dir+'out/20181006081714', bd_generator_model, 'bd_generator_model')
-gen_history = load_pickle(final_dir+'out/20181006081714', 'gen_history')
+save_model(outdir, bd_generator_model, 'bd_generator_model')
+save_pickle(outdir, gen_history, 'gen_history')
+# load_model(final_dir+'out/20181006081714', bd_generator_model, 'bd_generator_model')
+# gen_history = load_pickle(final_dir+'out/20181006081714', 'gen_history')
 
 # historyをplot
 plt.title('acc/loss')
@@ -92,17 +92,20 @@ plt.legend([
 plt.show
 
 # 通常のgeneratorモデルで予測したvalidデータを読み込む
-preded_outdir = '20181006031811'
-pred_seq = load_csv(final_dir+'out/'+preded_outdir, 'valid', ja_seq_len)
+# preded_outdir = '20181006031811'
+# pred_seq = load_csv(final_dir+'out/'+preded_outdir, 'valid', ja_seq_len)
+
+# 今回学習したモデルで予測結果を出力
+y_valid_wp, y_pred_wp = save_all_prediction(bd_generator_model, outdir, 'valid', x_valid, y_valid, ja_seq_len)
 
 # 今回学習したモデルで予測結果を変換（改良のつもり）
-y_valid_wp, y_pred_wp = save_prediction(bd_generator_model, outdir, 'valid', x_valid, pred_seq, y_valid, ja_seq_len)
+# y_valid_wp, y_pred_wp = save_prediction(bd_generator_model, outdir, 'valid', x_valid, pred_seq, y_valid, ja_seq_len)
 
 # 精度検証
 score = scoreBLEU(detokenizer_ja, y_pred_wp, y_valid_wp)
 
 # 結果の保存
-save_result(outdir, [['BLEU score', score], ['preded_outdir', preded_outdir]])
+save_result(outdir, [['BLEU score', score], ['detail', 'add mask_zero=True to decoder']])
 
 # 結果の表示
 cnt = 10
